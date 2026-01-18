@@ -3,7 +3,7 @@ flask-cors
 ultralytics
 torch
 torchvision
-opencv-python-headless
+opencv-python
 pillow
 requests
 gunicorn
