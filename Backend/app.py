@@ -6,28 +6,27 @@ from ultralytics import YOLO
 from PIL import Image
 import requests
 
-# =========================
-# Flask App
-# =========================
-app = Flask(__name__)
 load_dotenv()
+
+app = Flask(__name__)
+
 # =========================
-# CORS (Railway + Local + Vercel)
+# CORS (Local + Vercel + Railway)
 # =========================
-CORS(app, resources={
-    r"/*": {
-        "origins": [
-            "http://localhost:5173",
-            "http://127.0.0.1:5173",
-            os.getenv("FRONTEND_URL", "*")  
-        ]
-    }
-})
+allowed_origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173"
+]
+
+frontend_url = os.getenv("FRONTEND_URL")
+if frontend_url:
+    allowed_origins.append(frontend_url)
+
+CORS(app, resources={r"/*": {"origins": allowed_origins}})
 
 # =========================
 # Load YOLO Model
 # =========================
-# YOLO will auto-download yolov8n.pt if not found
 model = YOLO("yolov8n.pt")
 
 # =========================
@@ -54,11 +53,11 @@ def home():
     return jsonify({
         "status": "running",
         "message": "YOLO backend running 🚀",
-        "model_loaded": True
+        "model": "yolov8n"
     })
 
 # =========================
-# Detect Objects from Image URL
+# Detect Objects
 # =========================
 @app.route("/detect", methods=["POST"])
 def detect():
@@ -72,13 +71,11 @@ def detect():
         return jsonify({"error": "No image URL provided"}), 400
 
     try:
-        # Download image
         response = requests.get(image_url, stream=True, timeout=10)
         response.raise_for_status()
 
-        image = Image.open(response.raw)
+        image = Image.open(response.raw).convert("RGB")
 
-        # Run YOLO
         results = model(image, verbose=False)
 
         detections = []
@@ -96,9 +93,7 @@ def detect():
                 detections.append({
                     "object": name,
                     "confidence": round(conf, 2),
-                    "description": OBJECT_SUMMARY.get(
-                        name, "Detected object."
-                    ),
+                    "description": OBJECT_SUMMARY.get(name, "Detected object."),
                     "box": {
                         "x1": round(x1, 2),
                         "y1": round(y1, 2),
@@ -120,7 +115,7 @@ def detect():
         }), 500
 
 # =========================
-# Railway Entry Point
+# Entry Point
 # =========================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
