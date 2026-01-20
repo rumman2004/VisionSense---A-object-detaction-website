@@ -15,13 +15,15 @@ app = Flask(__name__)
 # =========================
 allowed_origins = [
     "http://localhost:5173",
-    "http://127.0.0.1:5173"
+    "http://127.0.0.1:5173",
+    "https://vision-sense-a-object-detaction-web.vercel.app"  # <--- ADD THIS EXACT LINE
 ]
 
 frontend_url = os.getenv("FRONTEND_URL")
 if frontend_url:
     allowed_origins.append(frontend_url)
 
+# Keep the rest the same
 CORS(app, resources={r"/*": {"origins": allowed_origins}})
 
 # =========================
